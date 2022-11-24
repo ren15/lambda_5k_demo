@@ -1,6 +1,10 @@
 # lambda_5k_demo
 
+In `aws_lambda_url.py`
 
+```python
+url = "https://${YOUR_LAMBDA}.lambda-url.${YOUR_REGION}.on.aws/"
+```
 
 ```bash
 python local_invoke.py 1 1 1 1
