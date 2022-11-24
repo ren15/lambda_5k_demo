@@ -30,11 +30,8 @@ def multi(input_x,sleep_time):
 
 def lambda_handler(event, context):
     body = json.loads(event['body'])
-    print(body)
     x = multi(body['input_x'],body['sleep_time'])
     ans = {'x':x}
-    print(ans)
-
     return {
         'statusCode': 200,
         'body': json.dumps(ans)
