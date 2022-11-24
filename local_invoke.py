@@ -4,7 +4,7 @@ import sys
 from compute import multi
 
 
-def local_invoke(payload, n):
+def invoke_local(payload, n):
     threads = payload["args"]["threads"]
     finished = 0
     ans = 0
@@ -25,6 +25,6 @@ if __name__ == "__main__":
     payload = {"args": {"x": float(sys.argv[1]), "threads": int(sys.argv[3])}}
 
     print(payload, f"n: {n}")
-    local_invoke(payload, n)
+    invoke_local(payload, n)
 
     print("Spent time: ", time.time() - t1)

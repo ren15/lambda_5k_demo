@@ -1,11 +1,15 @@
 from multiprocessing import Process, Pipe
 
 
-def f(x, conn):
+def f_inner(x):
     cnt = 0
     while cnt < 30000000:
         cnt += 1
-    conn.send(x)
+    return x
+
+
+def f(x, conn):
+    conn.send(f_inner(x))
     conn.close()
 
 
