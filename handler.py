@@ -1,6 +1,4 @@
 import json
-import os
-import time
 from multiprocessing import Process, Pipe
 
 def f(x,iter_mul,conn):
