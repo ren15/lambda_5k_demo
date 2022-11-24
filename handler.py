@@ -3,22 +3,22 @@ import os
 import time
 from multiprocessing import Process, Pipe
 
-def f(x,sleep_time,conn):
-    start_time = time.time()
+def f(x,iter_mul,conn):
     cnt = 0
-    while time.time() - start_time <sleep_time:
+    N = 30000000 * iter_mul
+    while cnt < N:
         cnt+=1
     conn.send(x)
     conn.close()
 
-def multi(input_x,sleep_time):
+def multi(input_x,iter_mul,threads):
     processes = []
     parent_connections = []
 
-    for _ in range(os.cpu_count()):            
+    for _ in range(threads):            
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
-        process = Process(target=f, args=(input_x, sleep_time,child_conn))
+        process = Process(target=f, args=(input_x, iter_mul,child_conn))
         processes.append(process)
 
     _ = [process.start() for process in processes]
@@ -30,7 +30,7 @@ def multi(input_x,sleep_time):
 
 def lambda_handler(event, context):
     body = json.loads(event['body'])
-    x = multi(body['input_x'],body['sleep_time'])
+    x = multi(body['input_x'],body['iter_mul'],body['threads'])
     ans = {'x':x}
     return {
         'statusCode': 200,
