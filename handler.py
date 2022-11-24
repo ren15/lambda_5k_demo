@@ -1,7 +1,7 @@
+import json
 import os
 import time
 from multiprocessing import Process, Pipe
-
 
 def f(x,sleep_time,conn):
     start_time = time.time()
@@ -28,9 +28,14 @@ def multi(input_x,sleep_time):
 
     return ans
 
+def lambda_handler(event, context):
+    body = json.loads(event['body'])
+    print(body)
+    x = multi(body['input_x'],body['sleep_time'])
+    ans = {'x':x}
+    print(ans)
 
-if __name__ == '__main__':
-    x = multi(1.1,1)
-    print(x)
-        
-
+    return {
+        'statusCode': 200,
+        'body': json.dumps(ans)
+    }
