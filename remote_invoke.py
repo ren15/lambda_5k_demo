@@ -15,7 +15,6 @@ async def invoke_lambda(url, data):
                 async with session.post(url, data=data, headers=headers) as resp:
                     return (await resp.json())["ans"]
             except Exception as _:
-                print("Exception, retrying")
                 continue
 
 
