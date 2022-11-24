@@ -1,52 +1,58 @@
+import sys
 import time
 import json
 import aiohttp
 import asyncio
-import sys
 
 from aws_lambda_url import url
 
 
-async def invoke_lambda(url, payload):
+async def invoke_lambda(url, data):
     async with aiohttp.ClientSession() as session:
         headers = {"Content-Type": "application/json"}
-        data = json.dumps(payload)
         while True:
             try:
                 async with session.post(url, data=data, headers=headers) as resp:
-                    return (await resp.json())["x"]
-            except:
+                    return (await resp.json())["ans"]
+            except Exception as _:
+                print("Exception, retrying")
                 continue
 
 
 async def send_loop(payload, n):
-    threads = payload["threads"]
+    threads = payload["args"]["threads"]
     finished = 0
     tasks = []
 
     while finished < n:
         run_threads = min(n - finished, threads)
         if run_threads < threads:
-            payload = payload.copy()
-            payload["threads"] = run_threads
-        tasks.append(asyncio.ensure_future(invoke_lambda(url, payload)))
+            payload["args"]["threads"] = run_threads
+        data = json.dumps(payload)
+        tasks.append(asyncio.ensure_future(invoke_lambda(url, data)))
         finished += run_threads
-    ans = sum(await asyncio.gather(*tasks))
-    print("ans: ", ans)
+
+    return sum(await asyncio.gather(*tasks))
 
 
 if __name__ == "__main__":
     t1 = time.time()
 
     payload = {
-        "input_x": float(sys.argv[1]),
-        "threads": 6,
+        "args": {
+            "x": float(sys.argv[1]),
+            "threads": 6,
+        }
     }
 
     n = int(sys.argv[2])
 
     print(payload, f"n: {n}")
+    with open("compute.py", "r") as f:
+        code = f.read()
+    payload["code"] = code
 
-    asyncio.run(send_loop(payload, n))
+    ans = asyncio.run(send_loop(payload, n))
+    print("ans: ", ans)
 
     print("Spent time: ", time.time() - t1)

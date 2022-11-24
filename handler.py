@@ -1,35 +1,19 @@
 import json
-from multiprocessing import Process, Pipe
-
-
-def f(x, conn):
-    cnt = 0
-    while cnt < 30000000:
-        cnt += 1
-    conn.send(x)
-    conn.close()
-
-
-def multi(x, threads):
-    processes = []
-    parent_connections = []
-
-    for _ in range(threads):
-        parent_conn, child_conn = Pipe()
-        parent_connections.append(parent_conn)
-        process = Process(target=f, args=(x, child_conn))
-        processes.append(process)
-
-    [p.start() for p in processes]
-    [p.join() for p in processes]
-
-    ans = sum([parent_conn.recv() for parent_conn in parent_connections])
-
-    return ans
+import sys
 
 
 def lambda_handler(event, context):
     body = json.loads(event["body"])
-    x = multi(body["input_x"], body["threads"])
-    ans = {"x": x}
-    return {"statusCode": 200, "body": json.dumps(ans)}
+    code = body["code"]
+    with open("/tmp/compute.py", "w") as f:
+        f.write(code)
+
+    sys.path.append("/tmp")
+    from compute import multi
+
+    try:
+        x = multi(**body["args"])
+        ans = {"ans": x}
+        return {"statusCode": 200, "body": json.dumps(ans)}
+    except:
+        return {"statusCode": 400}
