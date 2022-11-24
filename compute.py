@@ -3,7 +3,7 @@ from multiprocessing import Process, Pipe
 
 def f_inner(x):
     cnt = 0
-    while cnt < 30000000:
+    while cnt < 32 * 1000 * 1000:
         cnt += 1
     return x
 
