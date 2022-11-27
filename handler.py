@@ -15,5 +15,6 @@ def lambda_handler(event, context):
         x = multi(**body["args"])
         ans = {"ans": x}
         return {"statusCode": 200, "body": json.dumps(ans)}
-    except:
+    except Exception as e:
+        print(e)
         return {"statusCode": 400}

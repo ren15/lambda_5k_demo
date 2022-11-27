@@ -14,7 +14,8 @@ async def invoke_lambda(url, data):
             try:
                 async with session.post(url, data=data, headers=headers) as resp:
                     return (await resp.json())["ans"]
-            except Exception as _:
+            except Exception as e:
+                print(e)
                 continue
 
 
@@ -31,7 +32,15 @@ async def send_loop(payload, n):
         tasks.append(asyncio.ensure_future(invoke_lambda(url, data)))
         finished += run_threads
 
-    return sum(await asyncio.gather(*tasks))
+    ans_list = await asyncio.gather(*tasks)
+
+    ans = sum([i[0] for i in ans_list])
+    metadata_list = [i[1] for i in ans_list]
+    from local_invoke import print_cpuinfo
+
+    print_cpuinfo(metadata_list)
+
+    return ans
 
 
 if __name__ == "__main__":

@@ -26,4 +26,22 @@ def multi(x, threads):
     [p.start() for p in processes]
     [p.join() for p in processes]
 
-    return sum([parent_conn.recv() for parent_conn in parent_connections])
+    metadata = {
+        "cpuinfo": get_cpuinfo(),
+    }
+
+    return sum([parent_conn.recv() for parent_conn in parent_connections]), metadata
+
+
+def get_cpuinfo():
+    try:
+        with open("/proc/cpuinfo") as f:
+            cpuinfo = f.read()
+        model_name = (
+            cpuinfo.split("model name")[1].split(": ")[1].split("\n")[0].strip()
+        )
+        flags = cpuinfo.split("flags")[1].split(": ")[1].split("\n")[0].strip()
+        return f"{model_name} {flags}"
+    except Exception as e:
+        print(e)
+        return "Unknown"

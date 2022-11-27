@@ -8,14 +8,29 @@ def invoke_local(payload, n):
     threads = payload["args"]["threads"]
     finished = 0
     ans = 0
+    metadata_list = []
     while finished < n:
         run_threads = min(n - finished, threads)
         if run_threads < threads:
             payload = payload.copy()
             payload["args"]["threads"] = run_threads
-        ans += multi(**payload["args"])
+        ret, metadata = multi(**payload["args"])
+        ans += ret
+        metadata_list.append(metadata)
+
         finished += run_threads
     print("ans: ", ans)
+    print_cpuinfo(metadata_list)
+
+
+def print_cpuinfo(metadata_list):
+    cpuinfo_count = {}
+    for i in metadata_list:
+        if i["cpuinfo"] not in cpuinfo_count:
+            cpuinfo_count[i["cpuinfo"]] = 1
+        else:
+            cpuinfo_count[i["cpuinfo"]] += 1
+    print(cpuinfo_count)
 
 
 if __name__ == "__main__":
