@@ -41,7 +41,7 @@ def get_cpuinfo():
             cpuinfo.split("model name")[1].split(": ")[1].split("\n")[0].strip()
         )
         flags = cpuinfo.split("flags")[1].split(": ")[1].split("\n")[0].strip()
-        return f"{model_name} {flags}"
+        return f"{model_name}"
     except Exception as e:
         print(e)
         return "Unknown"
