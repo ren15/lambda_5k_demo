@@ -6,6 +6,8 @@ import asyncio
 
 from aws_lambda_url import url
 
+from fetch_stock import get_stocks, reduce_fn, filter_fn
+
 
 async def invoke_lambda(url, data):
     async with aiohttp.ClientSession() as session:
@@ -16,51 +18,37 @@ async def invoke_lambda(url, data):
                     return (await resp.json())["ans"]
             except Exception as e:
                 print(e)
-                continue
+                break
 
 
-async def send_loop(payload, n):
-    threads = payload["args"]["threads"]
-    finished = 0
+async def send_loop(code_str, n):
+    stock_list = get_stocks(n)
+
     tasks = []
 
-    while finished < n:
-        run_threads = min(n - finished, threads)
-        if run_threads < threads:
-            payload["args"]["threads"] = run_threads
+    for symbol in stock_list:
+        payload = {
+            "code": code_str,
+            "args": {"symbol": symbol},
+        }
         data = json.dumps(payload)
         tasks.append(asyncio.ensure_future(invoke_lambda(url, data)))
-        finished += run_threads
 
     ans_list = await asyncio.gather(*tasks)
-
-    ans = sum([i[0] for i in ans_list])
-    metadata_list = [i[1] for i in ans_list]
-    from local_invoke import print_cpuinfo
-
-    print_cpuinfo(metadata_list)
-
-    return ans
+    filtered = list(filter(filter_fn, ans_list))
+    ret = reduce_fn(filtered)
+    print("ans: ", ret)
 
 
 if __name__ == "__main__":
     t1 = time.time()
 
-    payload = {
-        "args": {
-            "x": float(sys.argv[1]),
-            "threads": 6,
-        }
-    }
+    n = int(sys.argv[1])
 
-    n = int(sys.argv[2])
+    print(f"stock num: {n}")
+    with open("fetch_stock.py", "r") as f:
+        code_str = f.read()
 
-    print(payload, f"n: {n}")
-    with open("compute.py", "r") as f:
-        code = f.read()
-    payload["code"] = code
-
-    ans = asyncio.run(send_loop(payload, n))
-    print("ans: ", ans)
+    asyncio.run(send_loop(code_str, n))
 
     print("Spent time: ", time.time() - t1)

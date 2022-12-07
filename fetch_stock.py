@@ -2,7 +2,8 @@ import yfinance
 import pandas as pd
 import bs4
 import requests
-import time
+import requests_cache
+
 
 
 def get_stocks(count: int):
@@ -21,8 +22,10 @@ def get_stocks(count: int):
 
 
 def get_prices(symbol):
+    print("handling symbol: ", symbol)
 
     ticker = yfinance.Ticker(symbol)
+    requests_cache.install_cache(cache_name="/tmp/yfinance/.cache", backend='sqlite')
     tradingday_list = [
         i.strftime("%Y-%m-%d")
         for i in ticker.history(interval="1d", start="2022-01-01").index.to_list()
@@ -32,7 +35,7 @@ def get_prices(symbol):
     for i in range(len(tradingday_list) - 1):
         start = tradingday_list[i]
         end = tradingday_list[i + 1]
-        data = ticker.history(start=start, end=end, interval="1m")
+        data = ticker.history(start=start, end=end, interval="1m", debug=False)
         data_list.append(data)
     data = pd.concat(data_list)
 
@@ -41,21 +44,12 @@ def get_prices(symbol):
 
     size_mb = data.memory_usage(index=True).sum() / 1024**2
 
-    return symbol, vwap, size_mb
+    return {"symbol": symbol, "vwap": vwap, "mem_mb": size_mb, "len": len(data)}
 
 
-def run():
-    tickers = list(get_stocks(5))
-
-    ts = time.time()
-    ans_list = []
-    for ticker in tickers:
-        ans_list.append(get_prices(ticker))
-
-    max_value = max(ans_list, key=lambda x: x[1])
-    print(max_value)
-    print(f"Time taken: {time.time() - ts}")
+def reduce_fn(x):
+    return min(x, key=lambda x: x["vwap"])
 
 
-if __name__ == "__main__":
-    run()
+def filter_fn(x):
+    return True

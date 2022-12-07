@@ -1,45 +1,34 @@
 import time
 import sys
+import concurrent.futures
 
-from compute import multi
-
-
-def invoke_local(payload, n):
-    threads = payload["args"]["threads"]
-    finished = 0
-    ans = 0
-    metadata_list = []
-    while finished < n:
-        run_threads = min(n - finished, threads)
-        if run_threads < threads:
-            payload = payload.copy()
-            payload["args"]["threads"] = run_threads
-        ret, metadata = multi(**payload["args"])
-        ans += ret
-        metadata_list.append(metadata)
-
-        finished += run_threads
-    print("ans: ", ans)
-    print_cpuinfo(metadata_list)
+from fetch_stock import get_stocks, get_prices, reduce_fn, filter_fn
 
 
-def print_cpuinfo(metadata_list):
-    cpuinfo_count = {}
-    for i in metadata_list:
-        if i["cpuinfo"] not in cpuinfo_count:
-            cpuinfo_count[i["cpuinfo"]] = 1
-        else:
-            cpuinfo_count[i["cpuinfo"]] += 1
-    print(cpuinfo_count)
+def multi(stock_list, threads):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        future_list = []
+        for stock in stock_list:
+            future = executor.submit(get_prices, stock)
+            future_list.append(future)
+    return [i.result() for i in future_list]
+
+
+def invoke_local(stock_list, threads):
+    ans_list = multi(stock_list, threads)
+    filtered = list(filter(filter_fn, ans_list))
+    ret = reduce_fn(filtered)
+    print("ans: ", ret)
 
 
 if __name__ == "__main__":
     t1 = time.time()
 
-    n = int(sys.argv[2])
-    payload = {"args": {"x": float(sys.argv[1]), "threads": int(sys.argv[3])}}
+    n = int(sys.argv[1])
+    threads = int(sys.argv[2])
+    print(f"stock num: {n},threads: {threads}")
 
-    print(payload, f"n: {n}")
-    invoke_local(payload, n)
+    stock_list = list(get_stocks(n))
+    invoke_local(stock_list, threads)
 
     print("Spent time: ", time.time() - t1)
